@@ -3,6 +3,7 @@ uvicorn
 streamlit
 requests
 python-dotenv
+numpy<2
 sentence-transformers
 faiss-cpu
 pymupdf
