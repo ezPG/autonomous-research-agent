@@ -4,13 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Handle missing API key gracefully for CI/CD environments
-api_key = os.getenv("GROQ_API_KEY")
-if not api_key:
-    # Use a dummy key if not present (tests will mock the client anyway)
-    api_key = "gsk_dummy_key_for_ci_environments"
-
-client = Groq(api_key=api_key)
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def create_plan(query: str) -> list[str]:
     response = client.chat.completions.create(
