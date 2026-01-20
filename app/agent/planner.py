@@ -1,12 +1,14 @@
-from groq import Groq
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+def get_client():
+    """Lazy initialization of the Groq client."""
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError(
+            "GROQ_API_KEY is not set. Please ensure the environment variable is configured in your Space or .env file."
+        )
+    return Groq(api_key=api_key)
 
 def create_plan(query: str) -> list[str]:
+    client = get_client()
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[
@@ -33,6 +35,7 @@ def classify_intent(query: str) -> str:
     """
     Classify the user's intent as either 'RESEARCH' or 'CONVERSATION'.
     """
+    client = get_client()
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[

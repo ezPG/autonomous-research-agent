@@ -1,12 +1,17 @@
-from groq import Groq
-import os
-
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+def get_client():
+    """Lazy initialization of the Groq client."""
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError(
+            "GROQ_API_KEY is not set. Please ensure the environment variable is configured in your Space or .env file."
+        )
+    return Groq(api_key=api_key)
 
 def synthesize_report(query: str, context: list[dict]) -> str:
     """
     Generate a structured report with citations based on the query and retrieved context.
     """
+    client = get_client()
     # Format context for the LLM
     context_str = ""
     for i, item in enumerate(context):
@@ -44,6 +49,7 @@ def generate_chat_response(query: str) -> str:
     """
     Generate a simple conversational response for non-research queries.
     """
+    client = get_client()
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[
