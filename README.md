@@ -1,16 +1,8 @@
----
-title: Autonomous Research Agent
-colorFrom: blue
-colorTo: purple
-sdk: docker
-pinned: false
----
 
 # Autonomous Research Agent (RAG + MCP)
 
 An end-to-end AI research agent that plans research tasks, searches the web, fetches documents, builds a RAG index, and generates structured, citation-backed reports. Built with **FastMCP**, **LangChain**, and **Groq**.
 
-[View on GitHub](https://github.com/ezPG/autonomous-research-agent)
 
 ## Features
 - **Autonomous Planning**: Decomposes complex queries into actionable research steps.
@@ -43,7 +35,7 @@ cd autonomous-research-agent
 
 # Build and run the container
 docker build -t research-agent .
-docker run -p 8501:8501 -e GROQ_API_KEY=your_api_key_here research-agent
+docker run -p 8501:8501 -e GROQ_API_KEY=[your_api_key] research-agent
 ```
 Access the chat UI at `http://localhost:8501`.
 
@@ -80,11 +72,3 @@ python -m pytest
 ├── Dockerfile           # Containerization setup
 └── requirements.txt     # Dependencies
 ```
-
-## Status
-✅ Core Agent Loop
-✅ LangChain Integration
-✅ MCP Compliance
-✅ Chat UI
-✅ Test Suite
-⏳ Deployment to HF Spaces
