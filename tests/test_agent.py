@@ -60,16 +60,20 @@ def test_mock_fetch_url(mock_loader):
     mock_loader.assert_called_once_with("https://example.com")
 
 # Test for the planner utility (Mocks Groq API)
-@patch('app.agent.planner.client')
-def test_planner_logic(mock_groq_client):
+@patch('app.agent.planner.get_client')
+def test_planner_logic(mock_get_client):
+    # Setup mock client
+    mock_client = MagicMock()
+    mock_get_client.return_value = mock_client
+    
     # Mock recursive structure of Groq response
     mock_response = MagicMock()
     mock_response.choices[0].message.content = "- Step 1\n- Step 2\n- Step 3"
-    mock_groq_client.chat.completions.create.return_value = mock_response
+    mock_client.chat.completions.create.return_value = mock_response
     
     from app.agent.planner import create_plan
     plan = create_plan("How to build a car?")
     
     assert len(plan) == 3
     assert plan[0] == "Step 1"
-    mock_groq_client.chat.completions.create.assert_called_once()
+    mock_client.chat.completions.create.assert_called_once()
