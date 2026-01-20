@@ -7,7 +7,8 @@ from typing import List, Dict, Any
 from app.tools.web_search import duckduckgo_search
 from app.tools.fetcher import fetch_url, fetch_pdf
 from app.agent.state import AgentState
-from app.agent.planner import create_plan
+from app.agent.planner import create_plan, classify_intent
+from app.agent.reasoning import synthesize_report, generate_chat_response
 
 
 mcp = FastMCP(
@@ -55,7 +56,6 @@ def get_rag_knowledge() -> str:
     return "\n---\n".join(rag.text_chunks)
 
 from app.rag import RAGStore
-from app.agent.reasoning import synthesize_report
 import asyncio
 import sys
 
@@ -68,6 +68,18 @@ async def run_research_task(query: str) -> dict:
     Run the autonomous research agent on a given query.
     This orchestrates the planning, searching, fetching, indexing, and reporting.
     """
+    
+    # 0. Classify Intent
+    intent = classify_intent(query)
+    if intent == "CONVERSATION":
+        return {
+            "query": query,
+            "plan": [],
+            "sources": [],
+            "observations": ["Classified as conversational query."],
+            "report": generate_chat_response(query)
+        }
+
     state = AgentState(query=query)
 
     # 1. Plan

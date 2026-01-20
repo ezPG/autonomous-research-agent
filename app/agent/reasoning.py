@@ -45,3 +45,18 @@ def synthesize_report(query: str, context: list[dict]) -> str:
     )
 
     return response.choices[0].message.content
+
+def generate_chat_response(query: str) -> str:
+    """
+    Generate a simple conversational response for non-research queries.
+    """
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {"role": "system", "content": "You are a helpful AI assistant. Respond conversationally to the user."},
+            {"role": "user", "content": query}
+        ],
+        temperature=0.7,
+        max_completion_tokens=200
+    )
+    return response.choices[0].message.content
