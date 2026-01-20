@@ -9,3 +9,8 @@ faiss-cpu
 pymupdf
 groq
 mcp
+langchain
+langchain-community
+duckduckgo-search
+ddgs
+beautifulsoup4
