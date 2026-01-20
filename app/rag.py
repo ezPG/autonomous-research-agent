@@ -1,14 +1,21 @@
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
-
-model = SentenceTransformer("all-MiniLM-L6-v2")
 
 class RAGStore:
+    _model = None
+
+    @classmethod
+    def get_model(cls):
+        if cls._model is None:
+            from sentence_transformers import SentenceTransformer
+            # Suppress logs if possible (some environments print to stdout)
+            cls._model = SentenceTransformer("all-MiniLM-L6-v2")
+        return cls._model
+
     def __init__(self):
         self.index = faiss.IndexFlatL2(384)
         self.text_chunks = []
-        self.metadata = [] # Store metadata (source_url) corresponding to chunks
+        self.metadata = [] 
 
     def chunk_text(self, text, chunk_size=500):
         words = text.split()
@@ -19,7 +26,7 @@ class RAGStore:
         chunks = list(self.chunk_text(text))
         if not chunks:
             return
-        embeddings = model.encode(chunks)
+        embeddings = self.get_model().encode(chunks)
         self.index.add(np.array(embeddings).astype("float32"))
         self.text_chunks.extend(chunks)
         self.metadata.extend([{"source": source}] * len(chunks))
@@ -28,7 +35,7 @@ class RAGStore:
         if not self.text_chunks:
             return []
             
-        q_emb = model.encode([query])
+        q_emb = self.get_model().encode([query])
         distances, indices = self.index.search(
             np.array(q_emb).astype("float32"), k
         )
