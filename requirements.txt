@@ -14,3 +14,5 @@ langchain-community
 duckduckgo-search
 ddgs
 beautifulsoup4
+pytest
+httpx
