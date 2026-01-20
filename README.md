@@ -1,16 +1,9 @@
 
----
-title: Autonomous Research Agent
-emoji: 🕵️‍♂️
-colorFrom: blue
-colorTo: purple
-sdk: docker
-pinned: false
----
-
 # Autonomous Research Agent (RAG + MCP)
 
 An end-to-end AI research agent that plans research tasks, searches the web, fetches documents, builds a RAG index, and generates structured, citation-backed reports. Built with **FastMCP**, **LangChain**, and **Groq**.
+
+**[Live Demo on Hugging Face Spaces](https://huggingface.co/spaces/ezPG/auto-research-agent)**
 
 
 ## Features
@@ -65,19 +58,4 @@ PYTHONPATH=. python -m app.mcp_server "How does quantum entanglement work?"
 ## Testing
 ```bash
 python -m pytest
-```
-
-## Project Structure
-```text
-.
-├── app/
-│   ├── agent/           # Reasoning, Planning, and State logic
-│   ├── tools/           # Search and Fetching tools (LangChain)
-│   ├── mcp_server.py    # Main FastMCP Server & Orchestration
-│   └── rag.py           # FAISS Vector Store management
-├── ui/
-│   └── streamlit_app.py # Chat-based Frontend
-├── tests/               # Unit tests with mocks
-├── Dockerfile           # Containerization setup
-└── requirements.txt     # Dependencies
 ```
