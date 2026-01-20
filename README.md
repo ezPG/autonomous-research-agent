@@ -1,4 +1,13 @@
 
+---
+title: Autonomous Research Agent
+emoji: 🕵️‍♂️
+colorFrom: blue
+colorTo: purple
+sdk: docker
+pinned: false
+---
+
 # Autonomous Research Agent (RAG + MCP)
 
 An end-to-end AI research agent that plans research tasks, searches the web, fetches documents, builds a RAG index, and generates structured, citation-backed reports. Built with **FastMCP**, **LangChain**, and **Groq**.
