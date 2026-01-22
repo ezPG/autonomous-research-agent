@@ -12,7 +12,7 @@ pinned: false
 
 An end-to-end AI research agent that plans research tasks, searches the web, fetches documents, builds a RAG index, and generates structured, citation-backed reports. Built with **FastMCP**, **LangChain**, and **Groq**.
 
-**[Live Demo on Hugging Face Spaces](https://huggingface.co/spaces/ezPG/auto-research-agent)**
+**[Live Demo on Azure Container Apps](https://research-agent-app.calmcoast-5e3b9fd4.centralus.azurecontainerapps.io/)** | **[Live Demo on Hugging Face Spaces](https://huggingface.co/spaces/ezPG/auto-research-agent)**
 
 
 ## Features
