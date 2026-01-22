@@ -34,8 +34,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ secrets.ACR_LOGIN_SERVER }}/research-agent:latest
-          cache-from: type=registry,ref=${{ secrets.ACR_LOGIN_SERVER }}/research-agent:buildcache
-          cache-to: type=registry,ref=${{ secrets.ACR_LOGIN_SERVER }}/research-agent:buildcache,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Azure Login
         uses: azure/login@v2
