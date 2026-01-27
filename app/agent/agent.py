@@ -50,8 +50,9 @@ class ResearchAgent:
             "- query_rag(query: str): Returns relevant snippets from indexed content (including local uploads).\n\n"
             "Format your response as a JSON object with two fields:\n"
             "1. 'thought': Your reasoning about what to do next.\n"
-            "2. 'action': The tool call to make, e.g., {'name': 'web_search', 'arguments': {'query': '...'}} or {'name': 'complete', 'arguments': {'message': '...'}} when done. "
-            "If you have enough information to answer directly (like for a greeting or basic knowledge), use the 'message' argument in the 'complete' action."
+            "2. 'action': The tool call to make, e.g., {'name': 'web_search', 'arguments': {'query': '...'}} or {'name': 'complete', 'arguments': {}} when done. "
+            "You MUST use tools to gather information for research queries. Do NOT rely on your internal training data to answer. "
+            "Only finish when you have gathered enough information and indexed it."
         )
 
         messages = [
@@ -73,6 +74,7 @@ class ResearchAgent:
                 state.observations.append(err_msg)
                 state.report = f"Research loop aborted due to LLM error: {e}"
                 break
+            
             thought = decision.get("thought", "")
             action = decision.get("action", {})
             
@@ -84,11 +86,6 @@ class ResearchAgent:
 
             if action_name == "complete" or not action_name:
                 state.observations.append("Research complete.")
-                if action_args.get("message"):
-                    state.report = action_args.get("message")
-                elif not state.tools_used:
-                    # Fallback if it just completed without message or tools
-                    state.report = thought
                 break
 
             state.tools_used.append(action_name)
@@ -109,7 +106,7 @@ class ResearchAgent:
                 messages.append({"role": "user", "content": f"Observation: {trunc_obs}"})
                 
             except Exception as e:
-                error_msg = f"Error executing tool {action_name}: {e}"
+                error_msg = f"Error executing tool {action_cmd}: {e}"
                 state.observations.append(f"Observation: {error_msg}")
                 messages.append({"role": "user", "content": error_msg})
 

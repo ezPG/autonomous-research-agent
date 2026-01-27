@@ -17,20 +17,24 @@ async def synthesize_report(query: str, context: list[dict], model: str = "llama
     # Format context for the LLM
     context_str = ""
     for i, item in enumerate(context):
-        # Truncate individual chunks if they are huge (eventhough chunking handles this mostly)
+        # Truncate individual chunks if they are huge
         text = item['text'][:1500] 
-        context_str += f"[Source {i+1}] ({item['metadata']['source']}):\n{text}\n\n"
+        source_url = item['metadata']['source']
+        context_str += f"[Source {i+1}] (URL: {source_url}):\n{text}\n\n"
     
     # Limit on total context characters to stay well within TPM limits
     if len(context_str) > 6000:
         context_str = context_str[:6000] + "...(truncated)"
 
     system_prompt = (
-        "You are an expert researcher. "
-        "Write a structured report based on the provided sources. "
-        "Include in-line citations like [Source 1] where appropriate. "
-        "Do not invent information not present in the sources. "
-        "If sources are insufficient, state that limitations."
+        "You are an expert researcher. Use the provided context to write a comprehensive, detailed, and structured research report. "
+        "The report should be long, well-organized with multiple sections and headings, and professionally formatted in Markdown. "
+        "Include in-line citations like [Source 1] for every factual statement. "
+        "At the end of the report, include a 'References' section. "
+        "Crucially, format each reference as a clickable Markdown link: "
+        "[Source X] (Title) - [Link](URL). "
+        "If it is a local file, use [Source X] - Filename. "
+        "Do not invent information. If parts of the query cannot be answered, explain what is missing."
     )
 
     messages = [

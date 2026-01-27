@@ -20,11 +20,13 @@ with st.sidebar:
     uploaded_file = st.file_uploader("Index a local PDF", type=["pdf"])
     
     st.header("Settings")
-    model_choice = st.selectbox(
-        "Select LLM Model",
-        ["llama-3.1-8b-instant", "openai/gpt-oss-20b"],
-        index=0
-    )
+    # model_choice = st.selectbox(
+    #     "Select LLM Model",
+    #     ["llama-3.1-8b-instant", "openai/gpt-oss-20b"],
+    #     index=0
+    # )
+    # st.info(f"Selected: `{model_choice}`")
+    model_choice = "llama-3.1-8b-instant"
     
     if uploaded_file and "indexed_files" not in st.session_state:
         st.session_state.indexed_files = set()
