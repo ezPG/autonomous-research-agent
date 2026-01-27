@@ -5,57 +5,42 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def get_client():
-    """Lazy initialization of the Groq client."""
+    """Lazy initialization of the Groq client (Sync)."""
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
-        raise ValueError(
-            "GROQ_API_KEY is not set. Please ensure the environment variable is configured in your Space or .env file."
-        )
+        raise ValueError("GROQ_API_KEY is not set.")
     return Groq(api_key=api_key)
 
-def create_plan(query: str) -> list[str]:
-    client = get_client()
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "You are a research planner. "
-                    "Break the task into concrete steps. "
-                    "Do not execute tools."
-                ),
-            },
-            {"role": "user", "content": query},
-        ],
-        temperature=0.2,
-        max_completion_tokens=1024,
-        top_p=1,
-        stream=False,
-    )
+def get_async_client():
+    """Lazy initialization of the AsyncGroq client."""
+    from groq import AsyncGroq
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY is not set.")
+    return AsyncGroq(api_key=api_key)
 
-    plan_text = response.choices[0].message.content
-    return [step.strip("- ") for step in plan_text.splitlines() if step.strip()]
 
-def classify_intent(query: str) -> str:
+async def classify_intent(query: str, model: str = "llama-3.1-8b-instant") -> str:
     """
-    Classify the user's intent as either 'RESEARCH' or 'CONVERSATION'.
+    Classify the user's intent as either 'RESEARCH' or 'CONVERSATION' (Async).
     """
-    client = get_client()
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
+    client = get_async_client()
+    response = await client.chat.completions.create(
+        model=model,
         messages=[
             {
                 "role": "system",
                 "content": (
                     "You are an intent classifier. "
-                    "Determine if the user's query requires internet research or if it is a simple conversational greeting/question. "
+                    "Determine if the user's query requires internet research or if it is a simple conversational greeting, localized question, or polite closing. "
+                    "One-word greetings (Hi, Hello, Hey) and polite statements (Thanks, Bye) should be CONVERSATION. "
                     "Respond with ONLY the word 'RESEARCH' or 'CONVERSATION'. "
                     "Examples: "
                     "'Hi' -> CONVERSATION "
+                    "'Hello there' -> CONVERSATION "
                     "'Who is the CEO of Google?' -> RESEARCH "
                     "'Explain quantum physics' -> RESEARCH "
-                    "'Thank you' -> CONVERSATION"
+                    "'Thank you for your help' -> CONVERSATION"
                 ),
             },
             {"role": "user", "content": query},

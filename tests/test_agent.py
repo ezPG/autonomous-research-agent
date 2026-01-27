@@ -5,8 +5,9 @@ from app.tools.fetcher import fetch_url
 from app.tools.web_search import duckduckgo_search
 
 # Test RAG functionality
-def test_rag_store_indexing():
-    store = RAGStore()
+def test_rag_store_indexing(tmp_path):
+    persist_dir = str(tmp_path / "rag_index")
+    store = RAGStore(persist_dir=persist_dir)
     store.add_document("Artificial intelligence is transforming the world.", source="ai_doc")
     store.add_document("Quantum computing is the next frontier.", source="qc_doc")
     
@@ -15,8 +16,9 @@ def test_rag_store_indexing():
     assert any(m["source"] == "ai_doc" for m in store.metadata)
     assert any(m["source"] == "qc_doc" for m in store.metadata)
 
-def test_rag_retrieval_accuracy():
-    store = RAGStore()
+def test_rag_retrieval_accuracy(tmp_path):
+    persist_dir = str(tmp_path / "rag_index")
+    store = RAGStore(persist_dir=persist_dir)
     store.add_document("The quick brown fox jumps over the lazy dog.", source="animal")
     store.add_document("The chef prepared a delicious spicy pasta for dinner.", source="food")
     
@@ -25,8 +27,9 @@ def test_rag_retrieval_accuracy():
     assert "chef" in results[0]["text"].lower()
     assert results[0]["metadata"]["source"] == "food"
 
-def test_rag_empty_state():
-    store = RAGStore()
+def test_rag_empty_state(tmp_path):
+    persist_dir = str(tmp_path / "rag_index")
+    store = RAGStore(persist_dir=persist_dir)
     assert store.retrieve("anything") == []
     # Test adding empty text
     store.add_document("")
@@ -61,19 +64,18 @@ def test_mock_fetch_url(mock_loader):
 
 # Test for the planner utility (Mocks Groq API)
 @patch('app.agent.planner.get_client')
-def test_planner_logic(mock_get_client):
+def test_intent_classification(mock_get_client):
     # Setup mock client
     mock_client = MagicMock()
     mock_get_client.return_value = mock_client
     
     # Mock recursive structure of Groq response
     mock_response = MagicMock()
-    mock_response.choices[0].message.content = "- Step 1\n- Step 2\n- Step 3"
+    mock_response.choices[0].message.content = "RESEARCH"
     mock_client.chat.completions.create.return_value = mock_response
     
-    from app.agent.planner import create_plan
-    plan = create_plan("How to build a car?")
+    from app.agent.planner import classify_intent
+    intent = classify_intent("How to build a car?")
     
-    assert len(plan) == 3
-    assert plan[0] == "Step 1"
+    assert intent == "RESEARCH"
     mock_client.chat.completions.create.assert_called_once()

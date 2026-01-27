@@ -7,6 +7,6 @@ def duckduckgo_search(query: str, max_results: int = 5) -> List[str]:
     Returns a list of result snippets/URLs.
     """
     wrapper = DuckDuckGoSearchAPIWrapper(max_results=max_results)
-    # The 'results' method returns a list of dicts with 'snippet', 'title', 'link'
+    # results returns a list of dicts with 'snippet', 'title', 'link'
     results = wrapper.results(query, max_results=max_results)
     return [r['link'] for r in results if 'link' in r]

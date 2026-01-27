@@ -16,3 +16,4 @@ ddgs
 beautifulsoup4
 pytest
 httpx
+nest_asyncio

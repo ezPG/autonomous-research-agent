@@ -16,20 +16,11 @@ An end-to-end AI research agent that plans research tasks, searches the web, fet
 
 
 ## Features
-- **Autonomous Planning**: Decomposes complex queries into actionable research steps.
-- **Multi-Source Fetching**: Scrapes web pages and PDFs using LangChain Community tools.
-- **RAG Architecture**: In-memory FAISS index with SentenceTransformer embeddings for precise retrieval.
-- **MCP Native**: Exposes tools (`web_search`, `fetch_url`, `query_rag`) and resources (`rag://knowledge`) via the Model Context Protocol.
-- **Modern UI**: Streamlit-based chat interface for an interactive research experience.
-- **CLI Mode**: Direct terminal entrypoint for quick research tasks.
-
-## Tech Stack
-- **LLM**: Groq (Llama-3.1-8b-instant)
-- **Framework**: LangChain (Community tools)
-- **Agent Protocol**: FastMCP (Model Context Protocol)
-- **Vector Store**: FAISS
-- **Embeddings**: SentenceTransformers (all-MiniLM-L6-v2)
-- **Frontend**: Streamlit
+- **Autonomous Reasoning (ReAct)**: A dynamic reasoning loop (Plan-Observe-Execute) that thrashes out complex queries autonomously.
+- **Local PDF Ingestion**: Upload and index local PDFs directly into the RAG store via the sidebar.
+- **Persistent RAG**: Uses FAISS and SentenceTransformers with disk persistence for reliable knowledge retrieval.
+- **Native MCP Architecture**: Decoupled agent (client) and tools (server) architecture using the Model Context Protocol.
+- **Modern UI**: Streamlit-based chat interface with real-time reasoning logs.
 
 ## Getting Started
 
@@ -40,7 +31,7 @@ You only need a **Groq API Key** to get started. Obtain one at the [Groq Console
 The easiest way to run the agent is using Docker, which handles all dependencies.
 
 ```bash
-# Clone the repository
+# Clone the repo
 git clone https://github.com/ezPG/autonomous-research-agent
 cd autonomous-research-agent
 

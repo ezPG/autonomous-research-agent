@@ -14,6 +14,104 @@ st.set_page_config(page_title="Research Agent Chat", layout="wide")
 
 st.title("Auto Research Agent")
 
+# Sidebar for PDF Ingestion
+with st.sidebar:
+    st.header("Upload Documents")
+    uploaded_file = st.file_uploader("Index a local PDF", type=["pdf"])
+    
+    st.header("Settings")
+    model_choice = st.selectbox(
+        "Select LLM Model",
+        ["llama-3.1-8b-instant", "openai/gpt-oss-20b"],
+        index=0
+    )
+    
+    if uploaded_file and "indexed_files" not in st.session_state:
+        st.session_state.indexed_files = set()
+
+    if uploaded_file and uploaded_file.name not in st.session_state.get("indexed_files", set()):
+        with st.status(f"Indexing {uploaded_file.name}...") as status:
+            import tempfile
+            from langchain_community.document_loaders import PyMuPDFLoader
+            
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+                tmp.write(uploaded_file.getvalue())
+                tmp_path = tmp.name
+            
+            try:
+                loader = PyMuPDFLoader(tmp_path)
+                docs = loader.load()
+                full_text = "\n".join([doc.page_content for doc in docs])
+                
+                if not full_text.strip():
+                    st.warning(f"No text extracted from {uploaded_file.name}. It might be a scanned PDF or empty.")
+                else:
+                    # Start an active MCP session to index. 
+                    async def index_local_text(text, source):
+                        env = os.environ.copy()
+                        env["PYTHONPATH"] = PROJECT_ROOT
+                        server_params = StdioServerParameters(
+                            command=sys.executable,
+                            args=["-m", "app.mcp_server"],
+                            cwd=PROJECT_ROOT,
+                            env=env
+                        )
+                        async with stdio_client(server_params) as (read, write):
+                            async with ClientSession(read, write) as session:
+                                await session.initialize()
+                                await session.call_tool("index_text", arguments={"text": text, "source": source})
+                    
+                    try:
+                        import nest_asyncio
+                        nest_asyncio.apply()
+                        asyncio.run(index_local_text(full_text, uploaded_file.name))
+                    except Exception as loop_error:
+                        # Fallback for complex loop envs
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        loop.run_until_complete(index_local_text(full_text, uploaded_file.name))
+                    
+                    st.session_state.indexed_files.add(uploaded_file.name)
+                    status.update(label=f"Finished indexing {uploaded_file.name}", state="complete")
+                    st.success(f"Indexed {uploaded_file.name}")
+            except Exception as e:
+                import traceback
+                st.error(f"Failed to index PDF: {e}")
+                st.code(traceback.format_exc())
+            finally:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+
+    if st.session_state.get("indexed_files"):
+        st.write("**Indexed Files:**")
+        for f in st.session_state.indexed_files:
+            st.write(f"- {f}")
+        
+        if st.button("Clear RAG Index"):
+            async def clear_remote_rag():
+                env = os.environ.copy()
+                env["PYTHONPATH"] = PROJECT_ROOT
+                server_params = StdioServerParameters(
+                    command=sys.executable,
+                    args=["-m", "app.mcp_server"],
+                    cwd=PROJECT_ROOT,
+                    env=env
+                )
+                async with stdio_client(server_params) as (read, write):
+                    async with ClientSession(read, write) as session:
+                        await session.initialize()
+                        await session.call_tool("clear_rag", arguments={})
+            
+            try:
+                import nest_asyncio
+                nest_asyncio.apply()
+                asyncio.run(clear_remote_rag())
+                st.session_state.indexed_files = set()
+                st.success("RAG Index cleared.")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Failed to clear RAG: {e}")
+
 # Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -25,9 +123,6 @@ for message in st.session_state.messages:
         if "data" in message:
             data = message["data"]
             with st.expander("Research Details"):
-                if "plan" in data:
-                    st.write("**Plan:**")
-                    st.json(data["plan"])
                 if "observations" in data:
                     st.write("**Observations:**")
                     st.json(data["observations"])
@@ -36,23 +131,27 @@ for message in st.session_state.messages:
                     st.json(data["sources"])
 
 # Function to run the research agent
-async def run_research(query):
+async def run_research(query, log_placeholder, model):
+    env = os.environ.copy()
+    env["PYTHONPATH"] = PROJECT_ROOT
     server_params = StdioServerParameters(
-        command="python",
+        command=sys.executable,
         args=["-m", "app.mcp_server"],
         cwd=PROJECT_ROOT,
-        env=os.environ.copy()
+        env=env
     )
     
     async with stdio_client(server_params) as (read, write):
         async with ClientSession(read, write) as session:
             await session.initialize()
             
-            result = await session.call_tool(
-                "run_research_task",
-                arguments={"query": query},
-            )
-            return result
+            from app.agent.agent import ResearchAgent
+            agent = ResearchAgent(session, model=model)
+            
+            log_placeholder.write("🚀 Agent started research loop...")
+            
+            state = await agent.run(query)
+            return state
 
 # Chat input
 if prompt := st.chat_input("Ask anything"):
@@ -63,41 +162,55 @@ if prompt := st.chat_input("Ask anything"):
 
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
-        message_placeholder.markdown("🔍 *Agent is planning and searching...*")
+        log_placeholder = st.expander("Agent Reasoning Logs", expanded=True)
         
         try:
-            # Create a new event loop for this thread
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            result = loop.run_until_complete(run_research(prompt))
+            state = asyncio.run(run_research(prompt, log_placeholder, model_choice))
             
-            if result and result.content:
-                data_str = result.content[0].text
-                data = json.loads(data_str)
-                report = data.get("report", "No report generated.")
-                
+            if state:
+                report = state.report
                 message_placeholder.markdown(report)
                 
-                with st.expander("Research Details"):
-                    st.write("**Plan:**")
-                    st.json(data.get("plan", []))
-                    st.write("**Observations:**")
-                    st.json(data.get("observations", []))
-                    st.write("**Sources:**")
-                    st.json(data.get("sources", []))
-                
+                # Show observations in logs
+                with log_placeholder:
+                    for obs in state.observations:
+                        if obs.startswith("Thought:"):
+                            st.write(f"{obs}")
+                        elif obs.startswith("Action:"):
+                            st.write(f"{obs}")
+                        elif obs.startswith("Observation:"):
+                            st.write(f"{obs}")
+                        else:
+                            st.write(obs)
+
                 # Add assistant response to chat history
                 st.session_state.messages.append({
                     "role": "assistant", 
                     "content": report,
-                    "data": data
+                    "data": {
+                        "observations": state.observations,
+                        "sources": state.sources
+                    }
                 })
             else:
-                error_msg = "Error: Agent returned empty result."
+                error_msg = "Error: Agent failed to return state."
                 message_placeholder.error(error_msg)
                 st.session_state.messages.append({"role": "assistant", "content": error_msg})
                 
         except Exception as e:
-            error_msg = f"An error occurred: {e}"
+            import traceback
+            inner_errors = []
+            if isinstance(e, BaseExceptionGroup):
+                for exc in e.exceptions:
+                    inner_errors.append(str(exc))
+            else:
+                inner_errors.append(str(e))
+                
+            error_details = "\n".join([f"- {err}" for err in inner_errors])
+            error_msg = f"An error occurred during research:\n{error_details}"
+            
             message_placeholder.error(error_msg)
+            with st.expander("Full Traceback"):
+                st.code(traceback.format_exc())
+                
             st.session_state.messages.append({"role": "assistant", "content": error_msg})

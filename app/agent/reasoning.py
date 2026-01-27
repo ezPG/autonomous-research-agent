@@ -2,27 +2,26 @@ from groq import Groq
 import os
 
 def get_client():
-    """Lazy initialization of the Groq client."""
-    api_key = os.getenv("GROQ_API_KEY")
-    if not api_key:
-        raise ValueError(
-            "GROQ_API_KEY is not set. Please ensure the environment variable is configured in your Space or .env file."
-        )
-    return Groq(api_key=api_key)
+    from app.agent.planner import get_client
+    return get_client()
 
-def synthesize_report(query: str, context: list[dict]) -> str:
+def get_async_client():
+    from app.agent.planner import get_async_client
+    return get_async_client()
+
+async def synthesize_report(query: str, context: list[dict], model: str = "llama-3.1-8b-instant") -> str:
     """
-    Generate a structured report with citations based on the query and retrieved context.
+    Generate a structured report with citations based on the query and retrieved context (Async).
     """
-    client = get_client()
+    client = get_async_client()
     # Format context for the LLM
     context_str = ""
     for i, item in enumerate(context):
-        # Truncate individual chunks if they are huge (though chunking handles this mostly)
+        # Truncate individual chunks if they are huge (eventhough chunking handles this mostly)
         text = item['text'][:1500] 
         context_str += f"[Source {i+1}] ({item['metadata']['source']}):\n{text}\n\n"
     
-    # Hard limit on total context characters to stay well within TPM limits
+    # Limit on total context characters to stay well within TPM limits
     if len(context_str) > 6000:
         context_str = context_str[:6000] + "...(truncated)"
 
@@ -39,8 +38,8 @@ def synthesize_report(query: str, context: list[dict]) -> str:
         {"role": "user", "content": f"Query: {query}\n\nContext:\n{context_str}"}
     ]
 
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
+    response = await client.chat.completions.create(
+        model=model,
         messages=messages,
         temperature=0.3,
         max_completion_tokens=1024
@@ -48,13 +47,13 @@ def synthesize_report(query: str, context: list[dict]) -> str:
 
     return response.choices[0].message.content
 
-def generate_chat_response(query: str) -> str:
+async def generate_chat_response(query: str, model: str = "llama-3.1-8b-instant") -> str:
     """
-    Generate a simple conversational response for non-research queries.
+    Generate a simple conversational response for non-research queries (Async).
     """
-    client = get_client()
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
+    client = get_async_client()
+    response = await client.chat.completions.create(
+        model=model,
         messages=[
             {"role": "system", "content": "You are a helpful AI assistant. Respond conversationally to the user."},
             {"role": "user", "content": query}
