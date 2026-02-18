@@ -24,11 +24,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ghcr.io/${{ github.repository_owner }}/research-agent:latest
+        run: |
+          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/research-agent
+          # Lowercase the entire IMAGE_ID
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          echo "IMAGE_ID=$IMAGE_ID"
+          
+          docker build -t $IMAGE_ID:latest .
+          docker push $IMAGE_ID:latest
 
       - name: Azure Login
         uses: azure/login@v2
@@ -39,9 +42,11 @@ jobs:
         uses: azure/CLI@v2
         with:
           inlineScript: |
+            IMAGE_ID=ghcr.io/${{ github.repository_owner }}/research-agent
+            IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
             az extension add --name containerapp --upgrade
             az containerapp update \
               --name research-agent-app \
               --resource-group rg-research-agent-v2 \
-              --image ghcr.io/${{ github.repository_owner }}/research-agent:latest \
+              --image $IMAGE_ID:latest \
               --set-env-vars GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
