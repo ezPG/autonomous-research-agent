@@ -136,7 +136,7 @@ for message in st.session_state.messages:
                     st.json(data["sources"])
 
 # Function to run the research agent
-async def run_research(query, log_placeholder, model):
+async def run_research(query, history, log_placeholder, model):
     env = os.environ.copy()
     env["PYTHONPATH"] = PROJECT_ROOT
     server_params = StdioServerParameters(
@@ -155,7 +155,7 @@ async def run_research(query, log_placeholder, model):
             
             log_placeholder.write("🚀 Agent started research loop...")
             
-            state = await agent.run(query)
+            state = await agent.run(query, history=history)
             return state
 
 # Chat input
@@ -170,7 +170,13 @@ if prompt := st.chat_input("Ask anything"):
         log_placeholder = st.expander("Agent Reasoning Logs", expanded=True)
         
         try:
-            state = asyncio.run(run_research(prompt, log_placeholder, model_choice))
+            # Prepare history for the agent
+            chat_history = []
+            for msg in st.session_state.messages:
+                # Only pass role and content to avoid metadata clutter
+                chat_history.append({"role": msg["role"], "content": msg["content"]})
+            
+            state = asyncio.run(run_research(prompt, chat_history, log_placeholder, model_choice))
             
             if state:
                 report = state.report

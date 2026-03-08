@@ -17,7 +17,7 @@ class ResearchAgent:
         self.model = model
         self.client = get_async_client()
 
-    async def run(self, query: str, max_iterations: int = 5) -> AgentState:
+    async def run(self, query: str, history: List[Dict[str, str]] = None, max_iterations: int = 5) -> AgentState:
         from app.agent.planner import classify_intent
         from app.agent.reasoning import generate_chat_response
 
@@ -25,14 +25,14 @@ class ResearchAgent:
         
         # Classify Intent
         try:
-            intent = await classify_intent(query, model=self.model)
+            intent = await classify_intent(query, history=history, model=self.model)
         except Exception as e:
             state.observations.append(f"Intent classification failed: {e}")
             intent = "RESEARCH" # Default to research if classification fails
         if intent == "CONVERSATION":
             state.observations.append("Classified as conversational query.")
             try:
-                state.report = await generate_chat_response(query, model=self.model)
+                state.report = await generate_chat_response(query, history=history, model=self.model)
             except Exception as e:
                 state.report = f"Failed to generate chat response: {e}"
             return state
@@ -56,9 +56,13 @@ class ResearchAgent:
         )
 
         messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Query: {query}"}
+            {"role": "system", "content": system_prompt}
         ]
+        
+        if history:
+            messages.extend(history[-6:]) # Inject context into research reasoning
+
+        messages.append({"role": "user", "content": f"Query: {query}"})
 
         for i in range(max_iterations):
             try:
@@ -120,7 +124,7 @@ class ResearchAgent:
             if rag_results and rag_results.content:
                 # The synthesize_report expects a list of dicts with 'text' and 'metadata'
                 context = json.loads(rag_results.content[0].text)
-                state.report = await synthesize_report(query, context, model=self.model)
+                state.report = await synthesize_report(query, context, history=history, model=self.model)
             else:
                 state.report = "No information gathered to synthesize a report."
         except Exception as e:

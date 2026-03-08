@@ -9,7 +9,7 @@ def get_async_client():
     from app.agent.planner import get_async_client
     return get_async_client()
 
-async def synthesize_report(query: str, context: list[dict], model: str = "llama-3.1-8b-instant") -> str:
+async def synthesize_report(query: str, context: list[dict], history: List[Dict[str, str]] = None, model: str = "llama-3.1-8b-instant") -> str:
     """
     Generate a structured report with citations based on the query and retrieved context (Async).
     """
@@ -38,9 +38,13 @@ async def synthesize_report(query: str, context: list[dict], model: str = "llama
     )
 
     messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"Query: {query}\n\nContext:\n{context_str}"}
+        {"role": "system", "content": system_prompt}
     ]
+    
+    if history:
+        messages.extend(history[-6:]) # Include some recent history for context
+        
+    messages.append({"role": "user", "content": f"Query: {query}\n\nContext:\n{context_str}"})
 
     response = await client.chat.completions.create(
         model=model,
@@ -51,17 +55,24 @@ async def synthesize_report(query: str, context: list[dict], model: str = "llama
 
     return response.choices[0].message.content
 
-async def generate_chat_response(query: str, model: str = "llama-3.1-8b-instant") -> str:
+async def generate_chat_response(query: str, history: List[Dict[str, str]] = None, model: str = "llama-3.1-8b-instant") -> str:
     """
     Generate a simple conversational response for non-research queries (Async).
     """
     client = get_async_client()
+    
+    messages = [
+        {"role": "system", "content": "You are a helpful AI assistant. Respond conversationally to the user."}
+    ]
+    
+    if history:
+        messages.extend(history[-10:]) # Pass a good amount of history for chat
+        
+    messages.append({"role": "user", "content": query})
+
     response = await client.chat.completions.create(
         model=model,
-        messages=[
-            {"role": "system", "content": "You are a helpful AI assistant. Respond conversationally to the user."},
-            {"role": "user", "content": query}
-        ],
+        messages=messages,
         temperature=0.7,
         max_completion_tokens=200
     )
