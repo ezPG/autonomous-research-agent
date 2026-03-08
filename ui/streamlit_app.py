@@ -170,11 +170,11 @@ if prompt := st.chat_input("Ask anything"):
         log_placeholder = st.expander("Agent Reasoning Logs", expanded=True)
         
         try:
-            # Prepare history for the agent
+            # Prepare history for the agent (exclude the current prompt we just appended)
             chat_history = []
-            for msg in st.session_state.messages:
-                # Only pass role and content to avoid metadata clutter
-                chat_history.append({"role": msg["role"], "content": msg["content"]})
+            if len(st.session_state.messages) > 1:
+                for msg in st.session_state.messages[:-1]:
+                    chat_history.append({"role": msg["role"], "content": msg["content"]})
             
             state = asyncio.run(run_research(prompt, chat_history, log_placeholder, model_choice))
             

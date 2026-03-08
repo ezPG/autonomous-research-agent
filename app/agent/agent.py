@@ -22,6 +22,10 @@ class ResearchAgent:
         from app.agent.reasoning import generate_chat_response
 
         state = AgentState(query=query)
+        # hist_len = len(history) if history else 0
+        # state.observations.append(f"DEBUG: history_len={hist_len}")
+        # if history:
+        #     state.observations.append(f"DEBUG: last_hist_role={history[-1]['role']}")
         
         # Classify Intent
         try:
@@ -112,6 +116,8 @@ class ResearchAgent:
             except Exception as e:
                 error_msg = f"Error executing tool {action_name}: {e}"
                 state.observations.append(f"Observation: {error_msg}")
+                # Log full error for diagnostics
+                print(f"DEBUG TOOL ERROR: {error_msg}")
                 messages.append({"role": "user", "content": error_msg})
 
         # Final Synthesis
