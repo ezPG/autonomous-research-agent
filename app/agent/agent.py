@@ -106,7 +106,7 @@ class ResearchAgent:
                 messages.append({"role": "user", "content": f"Observation: {trunc_obs}"})
                 
             except Exception as e:
-                error_msg = f"Error executing tool {action_cmd}: {e}"
+                error_msg = f"Error executing tool {action_name}: {e}"
                 state.observations.append(f"Observation: {error_msg}")
                 messages.append({"role": "user", "content": error_msg})
 
