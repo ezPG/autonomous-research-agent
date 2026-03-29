@@ -48,7 +48,7 @@ async def fetch_page_content(url: str) -> str:
     """
     content = fetch_url(url)
     if content:
-        rag.add_document(content, source=url)
+        rag.add_document(content, metadata={"source": url})
         return f"Fetched and indexed content from {url} (Length: {len(content)})"
     return f"Failed to fetch content from {url}"
 
@@ -59,7 +59,7 @@ async def fetch_pdf_content(url: str) -> str:
     """
     content = fetch_pdf(url)
     if content:
-        rag.add_document(content, source=url)
+        rag.add_document(content, metadata={"source": url})
         return f"Fetched and indexed PDF content from {url} (Length: {len(content)})"
     return f"Failed to fetch PDF content from {url}"
 
@@ -73,11 +73,19 @@ async def query_rag(query: str, k: int = 5) -> str:
     return json.dumps(results)
 
 @mcp.tool()
-async def index_text(text: str, source: str = "manual") -> str:
+async def index_text(text: str, source: str = "manual", metadata: str = None) -> str:
     """
     Directly index a piece of text into the RAG store.
+    'metadata' should be a JSON string.
     """
-    rag.add_document(text, source=source)
+    meta_dict = {"source": source}
+    if metadata:
+        try:
+            extra_meta = json.loads(metadata)
+            meta_dict.update(extra_meta)
+        except:
+            pass
+    rag.add_document(text, metadata=meta_dict)
     return f"Indexed text from {source} (Length: {len(text)})"
 
 @mcp.tool()

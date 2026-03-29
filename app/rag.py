@@ -41,19 +41,31 @@ class RAGStore:
                 self.text_chunks = data["chunks"]
                 self.metadata = data["metadata"]
 
-    def chunk_text(self, text, chunk_size=500):
-        words = text.split()
-        for i in range(0, len(words), chunk_size):
-            yield " ".join(words[i:i + chunk_size])
+    def chunk_text(self, text, chunk_size=1000, chunk_overlap=200):
+        from langchain_text_splitters import RecursiveCharacterTextSplitter
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            separators=["\n\n", "\n", " ", ""]
+        )
+        return splitter.split_text(text)
 
-    def add_document(self, text: str, source: str = ""):
-        chunks = list(self.chunk_text(text))
+    def add_document(self, text: str, metadata: dict = None):
+        if metadata is None:
+            metadata = {}
+        
+        chunks = self.chunk_text(text)
         if not chunks:
             return
+        
         embeddings = self.get_model().encode(chunks)
         self.index.add(np.array(embeddings).astype("float32"))
         self.text_chunks.extend(chunks)
-        self.metadata.extend([{"source": source}] * len(chunks))
+        
+        # Extend metadata for each chunk
+        for _ in range(len(chunks)):
+            self.metadata.append(metadata.copy())
+            
         self.save() # Auto-persist after adding
 
     def clear(self):

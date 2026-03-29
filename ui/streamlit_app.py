@@ -64,7 +64,8 @@ with st.sidebar:
                         async with stdio_client(server_params) as (read, write):
                             async with ClientSession(read, write) as session:
                                 await session.initialize()
-                                await session.call_tool("index_text", arguments={"text": text, "source": source})
+                                metadata = json.dumps({"title": source})
+                                await session.call_tool("index_text", arguments={"text": text, "source": source, "metadata": metadata})
                     
                     try:
                         import nest_asyncio
